@@ -1,35 +1,26 @@
-import com.vmware.vim25.mo.*
-import com.vmware.vim25.*
+import com.logicmonitor.common.sse.utils.GroovyScriptHelper
+import com.logicmonitor.mod.Snippets
 
 def host = hostProps.get("system.hostname")
-def user = hostProps.get("esx.user")
-def pass = hostProps.get("esx.pass")
-def url = hostProps.get("vcenter.url") ?: "https://${host}/sdk"
-
-ServiceInstance si = null
+def user = hostProps.get('vcenter.user') ?: hostProps.get("vcsa.user") ?: hostProps.get("esx.user")
+def pass = hostProps.get('vcenter.pass') ?: hostProps.get("vcsa.pass") ?: hostProps.get("esx.pass")
 
 try {
-    si = new ServiceInstance(new URL(url), user, pass, true)
-    Folder rootFolder = si.getRootFolder()
-    ManagedEntity[] mes = new InventoryNavigator(rootFolder).searchManagedEntities("HostSystem")
-    
-    if (mes == null || mes.length == 0) {
-        println("No ESXi hosts found.")
-        return
+    // Establish a connection to the vCenter/ESXi host
+    def url = new URL("https://$vcenter.{host}/sdk")
+    def connection = url.openConnection()
+    connection.setRequestMethod("GET")
+    connection.setDoOutput(true)
+    connection.setRequestProperty("Authorization", "Basic " + "${user}:${pass}".bytes.encodeBase64().toString())
+
+    // Check the response code
+    if (connection.getResponseCode() == 200) {
+        println("Connection successful!")
+    } else {
+        println("Failed to connect. Response code: " + connection.getResponseCode())
     }
-
-    for (int i = 0; i < mes.length; i++) {
-        HostSystem host = (HostSystem) mes[i]
-        println("ESXi Host Name: " + host.getName())
-    }
-
-    println("Successfully connected to the ESXi host!")
-    println("Connection URL: " + url)
-
 } catch (Exception e) {
-    println("Error connecting to the ESXi host: " + e.getMessage())
-} finally {
-    if (si != null) {
-        si.getServerConnection().logout()
-    }
+    println("Error: " + e.getMessage())
 }
+
+return 0
