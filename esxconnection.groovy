@@ -7,7 +7,7 @@ def pass = hostProps.get('vcenter.pass') ?: hostProps.get("vcsa.pass") ?: hostPr
 
 try {
     // Establish a connection to the vCenter/ESXi host
-    def url = new URL("https://$vcenter.{host}/sdk")
+    def url = new URL("https://${host}/") //edit endpoint to test and query
     def connection = url.openConnection()
     connection.setRequestMethod("GET")
     connection.setDoOutput(true)
